@@ -1,28 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Blog Site</title>
+  <meta charset="UTF-8">
+  <title>Blog App</title>
+  <script type="module" src="app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-4">
-  <div id="auth-section" class="mb-4">
-    <input id="email" type="email" placeholder="Email" class="border p-2" />
-    <input id="password" type="password" placeholder="Password" class="border p-2" />
-    <button onclick="login()" class="bg-blue-500 text-white px-4 py-2">Login</button>
-    <button onclick="register()" class="bg-green-500 text-white px-4 py-2">Register</button>
-    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 hidden" id="logoutBtn">Logout</button>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Blog App</h1>
+
+    <div class="space-y-2 mb-4">
+      <input id="email" type="email" placeholder="Email" class="border p-2 w-full" />
+      <input id="password" type="password" placeholder="Password" class="border p-2 w-full" />
+      <input id="username" type="text" placeholder="Username (for registration)" class="border p-2 w-full" />
+
+      <div class="flex gap-2">
+        <button onclick="register()" class="bg-green-500 text-white px-4 py-2 rounded">Register</button>
+        <button onclick="login()" class="bg-blue-500 text-white px-4 py-2 rounded">Login</button>
+        <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded">Logout</button>
+      </div>
+    </div>
+
+    <div id="status" class="mb-4 text-gray-700">Checking auth...</div>
+
+    <div class="mb-4">
+      <textarea id="blogContent" placeholder="Write a blog..." class="border p-2 w-full"></textarea>
+      <button onclick="postBlog()" class="bg-purple-600 text-white px-4 py-2 mt-2 rounded">Post Blog</button>
+    </div>
+
+    <div id="blog-list"></div>
   </div>
-
-  <div id="blog-form" class="mb-4">
-    <textarea id="blogContent" placeholder="Write your blog..." class="w-full p-2 border"></textarea>
-    <button onclick="postBlog()" class="bg-purple-500 text-white px-4 py-2 mt-2">Post Blog</button>
-  </div>
-
-  <h2 class="text-2xl font-bold">All Blogs:</h2>
-  <div id="blog-list" class="space-y-4 mt-4"></div>
-
-  <script type="module" src="app.js"></script>
 </body>
 </html>
