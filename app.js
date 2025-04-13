@@ -17,7 +17,7 @@ import {
   get
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-// Your Firebase Config
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCDseTCM-C2JDRsOuKb129UMWN-V2n2VvU",
   authDomain: "nexus-10d33.firebaseapp.com",
@@ -112,45 +112,60 @@ window.likeBlog = async (id) => {
 const blogList = document.getElementById("blog-list");
 const blogsRef = ref(db, 'blogs/');
 
-onValue(blogsRef, snapshot => {
-  blogList.innerHTML = '';
-  const user = auth.currentUser;
+// Function to render blogs based on current user
+function renderBlogs(currentUser) {
+  onValue(blogsRef, snapshot => {
+    blogList.innerHTML = '';
 
-  snapshot.forEach(child => {
-    const blog = child.val();
-    const blogId = child.key;
+    snapshot.forEach(child => {
+      const blog = child.val();
+      const blogId = child.key;
 
-    const div = document.createElement('div');
-    div.className = "bg-white p-4 rounded shadow mb-4";
-    div.innerHTML = `
-      <p class="text-lg">${blog.content}</p>
-      <small class="text-gray-500">Posted by: ${blog.userEmail || "Anonymous"} on ${blog.date}</small>
-     <div class="mt-2 flex items-center space-x-2">
-  <button onclick="likeBlog('${blogId}')" class="text-red-600 font-bold text-lg">
-    ${blog.likedBy && blog.likedBy[user?.uid] ? "♥" : "♡"}
-  </button>
-  <span>${Object.values(blog.likedBy || {}).filter(v => v).length} likes</span>
-</div>
-    `;
+      const div = document.createElement('div');
+      div.className = "bg-white p-4 rounded shadow mb-4";
 
-    if (user && user.uid === blog.uid) {
-      const delBtn = document.createElement("button");
-      delBtn.innerText = "Delete";
-      delBtn.className = "bg-red-500 text-white px-2 py-1 ml-2 rounded mt-2";
-      delBtn.onclick = () => deleteBlog(blogId);
-      div.appendChild(delBtn);
-    }
+      const userLiked = blog.likedBy && currentUser ? blog.likedBy[currentUser.uid] : false;
+      const totalLikes = Object.values(blog.likedBy || {}).filter(v => v).length;
 
-    blogList.prepend(div);
+      div.innerHTML = `
+        <p class="text-lg">${blog.content}</p>
+        <small class="text-gray-500">Posted by: ${blog.userEmail || "Anonymous"} on ${blog.date}</small>
+        <div class="mt-2 flex items-center space-x-2">
+          <button onclick="likeBlog('${blogId}')" class="text-red-600 font-bold text-lg">
+            ${userLiked ? "♥" : "♡"}
+          </button>
+          <span>${totalLikes} likes</span>
+        </div>
+      `;
+
+      if (currentUser && currentUser.uid === blog.uid) {
+        const delBtn = document.createElement("button");
+        delBtn.innerText = "Delete";
+        delBtn.className = "bg-red-500 text-white px-2 py-1 ml-2 rounded mt-2";
+        delBtn.onclick = () => deleteBlog(blogId);
+        div.appendChild(delBtn);
+      }
+
+      blogList.prepend(div);
+    });
   });
-});
+}
 
-// Optional: Track auth state
+// Auth state changes
 onAuthStateChanged(auth, user => {
-  const status = document.getElementById("status");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const emailInput = document.getElementById("email");
+  const passInput = document.getElementById("password");
+
   if (user) {
-    status.innerText = `Logged in as: ${user.email}`;
+    logoutBtn.classList.remove("hidden");
+    emailInput.disabled = true;
+    passInput.disabled = true;
   } else {
-    status.innerText = "Not logged in";
+    logoutBtn.classList.add("hidden");
+    emailInput.disabled = false;
+    passInput.disabled = false;
   }
+
+  renderBlogs(user); // Re-render blogs with correct user context
 });
