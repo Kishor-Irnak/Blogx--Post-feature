@@ -12,11 +12,12 @@ import {
   ref,
   push,
   onValue,
+  update,
   remove,
-  set
+  get
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-// Firebase config
+// Your Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCDseTCM-C2JDRsOuKb129UMWN-V2n2VvU",
   authDomain: "nexus-10d33.firebaseapp.com",
@@ -29,26 +30,16 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-getAnalytics(app);
+const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getDatabase(app);
-
-const blogList = document.getElementById("blog-list");
 
 // Register
 window.register = () => {
   const email = document.getElementById("email").value;
   const pass = document.getElementById("password").value;
-  const username = document.getElementById("username").value;
 
   createUserWithEmailAndPassword(auth, email, pass)
-    .then(cred => {
-      const userRef = ref(db, 'users/' + cred.user.uid);
-      return set(userRef, {
-        email: email,
-        username: username
-      });
-    })
     .then(() => alert("Registered successfully"))
     .catch(err => alert(err.message));
 };
@@ -74,23 +65,16 @@ window.postBlog = () => {
   const user = auth.currentUser;
   if (!user) return alert("You must be logged in to post!");
 
-  const userRef = ref(db, 'users/' + user.uid);
-  onValue(userRef, snapshot => {
-    const userData = snapshot.val();
+  const blogRef = ref(db, 'blogs/');
+  push(blogRef, {
+    content: blog,
+    date: new Date().toLocaleString(),
+    uid: user.uid,
+    userEmail: user.email,
+    likedBy: {}
+  });
 
-    const blogRef = ref(db, 'blogs/');
-    push(blogRef, {
-      content: blog,
-      date: new Date().toLocaleString(),
-      uid: user.uid,
-      userEmail: user.email,
-      username: userData.username,
-      likedBy: {},
-      comments: []
-    });
-
-    document.getElementById("blogContent").value = '';
-  }, { onlyOnce: true });
+  document.getElementById("blogContent").value = '';
 };
 
 // Delete a blog
@@ -101,9 +85,7 @@ function deleteBlog(id) {
     .catch(err => alert("Error deleting: " + err.message));
 }
 
-// Like a blog
-import { get, update } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-
+// Toggle like
 window.likeBlog = async (id) => {
   const user = auth.currentUser;
   if (!user) return alert("Login to like!");
@@ -126,28 +108,10 @@ window.likeBlog = async (id) => {
   }
 };
 
-// Add a comment
-window.addComment = (id) => {
-  const user = auth.currentUser;
-  if (!user) return alert("Login to comment!");
-
-  const commentInput = document.getElementById(`comment-${id}`);
-  const text = commentInput.value;
-
-  const userRef = ref(db, 'users/' + user.uid);
-  onValue(userRef, snapshot => {
-    const userData = snapshot.val();
-    const commentRef = ref(db, 'blogs/' + id + '/comments');
-    push(commentRef, {
-      text: text,
-      user: userData.username
-    });
-    commentInput.value = '';
-  }, { onlyOnce: true });
-};
-
-// Show blogs
+// Display blogs
+const blogList = document.getElementById("blog-list");
 const blogsRef = ref(db, 'blogs/');
+
 onValue(blogsRef, snapshot => {
   blogList.innerHTML = '';
   const user = auth.currentUser;
@@ -155,31 +119,23 @@ onValue(blogsRef, snapshot => {
   snapshot.forEach(child => {
     const blog = child.val();
     const blogId = child.key;
-    const likeCount = blog.likedBy ? Object.keys(blog.likedBy).length : 0;
-    const comments = blog.comments ? Object.values(blog.comments) : [];
 
     const div = document.createElement('div');
     div.className = "bg-white p-4 rounded shadow mb-4";
     div.innerHTML = `
       <p class="text-lg">${blog.content}</p>
-      <small class="text-gray-500">Posted by: ${blog.username || blog.userEmail} on ${blog.date}</small>
-      <div class="flex items-center mt-2">
-        <button onclick="likeBlog('${blogId}')" class="text-red-500 text-xl">❤️</button>
-        <span class="ml-2 text-sm">${likeCount} likes</span>
-      </div>
+      <small class="text-gray-500">Posted by: ${blog.userEmail || "Anonymous"} on ${blog.date}</small>
       <div class="mt-2">
-        <input id="comment-${blogId}" class="border p-1 w-full" placeholder="Add a comment..." />
-        <button onclick="addComment('${blogId}')" class="bg-blue-500 text-white px-2 py-1 mt-1">Comment</button>
-        <div class="mt-2 space-y-1 text-sm text-gray-700">
-          ${comments.map(c => `<p><b>${c.user}:</b> ${c.text}</p>`).join('')}
-        </div>
+        <button onclick="likeBlog('${blogId}')" class="bg-red-500 text-white px-2 py-1 rounded">
+          ${blog.likedBy && blog.likedBy[user?.uid] ? "♥ Liked" : "♡ Like"}
+        </button>
       </div>
     `;
 
     if (user && user.uid === blog.uid) {
       const delBtn = document.createElement("button");
       delBtn.innerText = "Delete";
-      delBtn.className = "bg-red-500 text-white px-2 py-1 mt-2 rounded";
+      delBtn.className = "bg-red-500 text-white px-2 py-1 ml-2 rounded mt-2";
       delBtn.onclick = () => deleteBlog(blogId);
       div.appendChild(delBtn);
     }
@@ -188,7 +144,7 @@ onValue(blogsRef, snapshot => {
   });
 });
 
-// Auth status
+// Optional: Track auth state
 onAuthStateChanged(auth, user => {
   const status = document.getElementById("status");
   if (user) {
