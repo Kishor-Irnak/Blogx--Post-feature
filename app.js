@@ -125,11 +125,12 @@ onValue(blogsRef, snapshot => {
     div.innerHTML = `
       <p class="text-lg">${blog.content}</p>
       <small class="text-gray-500">Posted by: ${blog.userEmail || "Anonymous"} on ${blog.date}</small>
-      <div class="mt-2">
-        <button onclick="likeBlog('${blogId}')" class="bg-red-500 text-white px-2 py-1 rounded">
-          ${blog.likedBy && blog.likedBy[user?.uid] ? "♥ Liked" : "♡ Like"}
-        </button>
-      </div>
+     <div class="mt-2 flex items-center space-x-2">
+  <button onclick="likeBlog('${blogId}')" class="text-red-600 font-bold text-lg">
+    ${blog.likedBy && blog.likedBy[user?.uid] ? "♥" : "♡"}
+  </button>
+  <span>${Object.values(blog.likedBy || {}).filter(v => v).length} likes</span>
+</div>
     `;
 
     if (user && user.uid === blog.uid) {
